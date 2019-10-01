@@ -8,6 +8,13 @@
 <body>
   <script type="text/javascript">
    
+    // multiple lanes (cpu and gpu)
+    // wait/signal
+
+    // number of queued frames
+    // number of back buffers
+    // present params (sync interval)
+
     // TODO :
     // GPU back buffer usage timing
     // CPU present wait or waitable object
@@ -24,7 +31,8 @@
     let currentTimeCPU = 0;
     let currentTimeGPU = 0;
     let vsyncrate = 20;
-    let lastGPUFramePresentTime = 0;
+    let lastGPUFrameFlipTime = 0;
+
     for(let i = 0; i < framesDuration.length; i++)
     {
         let submissionTimeGPU = 0;
@@ -32,7 +40,8 @@
         let startTime = currentTimeCPU;
         let workDuration = framesDuration[i];
         let endWorkTime = startTime + workDuration;
-        let totalDuration = workDuration;
+        let waitTime = Math.max(0.0, lastGPUFrameFlipTime - endWorkTime);
+        let totalDuration = workDuration + waitTime;
 
         let container = new PIXI.Container();
         let text = new PIXI.Text("S" + i, {fontFamily : 'Arial', fontSize: 10, fill:0xFFFFFF});
@@ -41,20 +50,29 @@
         workSection.beginFill(0xAAAAAA);
         workSection.drawRect(0, 0, workDuration * scale, 12);
         workSection.endFill();
+        
+        let waitPresentSectionCPU = new PIXI.Graphics();
+        waitPresentSectionCPU.lineStyle(1);
+        waitPresentSectionCPU.beginFill(0xFF00FF, 0.5);
+        waitPresentSectionCPU.drawRect(0, 0, waitTime * scale, 12);
+        waitPresentSectionCPU.endFill();
+        waitPresentSectionCPU.x = (endWorkTime - startTime) * scale;
 
+        container.addChild(waitPresentSectionCPU);
         container.addChild(workSection);
         container.addChild(text);
 
         container.x = startTime * scale;
 
         app.stage.addChild(container);
+
         
         submissionTimeGPU = startTime + frameGPURatio[i] * framesDuration[i];
         currentTimeCPU += totalDuration; 
         }();
 
         var GPU = function() {
-        let waitForBufferDurationGPU = Math.max(0, lastGPUFramePresentTime - submissionTimeGPU);
+        let waitForBufferDurationGPU = Math.max(0, lastGPUFrameFlipTime - submissionTimeGPU);
         let workStartTimeGPU = submissionTimeGPU + waitForBufferDurationGPU;
         let workDurationGPU = framesGPUDuration[i];
         let endWorkTimeGPU = workStartTimeGPU + workDurationGPU;
@@ -97,7 +115,7 @@
 
         app.stage.addChild(containerGPU);    
         currentTimeGPU = endWorkTimeGPU;
-        lastGPUFramePresentTime = nextVSyncTimeGPU; 
+        lastGPUFrameFlipTime = nextVSyncTimeGPU; 
         }();
     }
 
