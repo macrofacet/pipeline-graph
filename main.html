@@ -17,8 +17,8 @@
     app.renderer.backgroundColor = 0xEEEEEE;
     app.ticker.add(delta => gameloop(delta));
 
-    let scale = 4; //px per ms 
-    let framesDuration = [10, 30, 10, 10, 10, 10, 10, 10, 10];
+    let scale = 5; //px per ms 
+    let framesDuration = [10, 10, 10, 10, 10, 10, 10, 10, 10];
     let frameGPURatio = [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9];
     let framesGPUDuration = [5, 5, 5, 5, 5, 5, 5, 5, 5];
     let currentTimeCPU = 0;
@@ -49,7 +49,7 @@
 
         app.stage.addChild(container);
         
-        submissionTimeGPU = startTime + frameGPURatio[i] * framesDuration[i];;
+        submissionTimeGPU = startTime + frameGPURatio[i] * framesDuration[i];
         currentTimeCPU += totalDuration; 
         }();
 
@@ -60,19 +60,17 @@
         let endWorkTimeGPU = workStartTimeGPU + workDurationGPU;
 
         let nextVSyncTimeGPU = Math.ceil(endWorkTimeGPU / vsyncrate) * vsyncrate;
-      //  let totalDurationGPU = workDurationGPU + waitVSyncGPU;
-
+        let waitVSyncGPU = nextVSyncTimeGPU - endWorkTimeGPU;
 
         let containerGPU = new PIXI.Container();
         let textGPU = new PIXI.Text("D" + i, {fontFamily : 'Arial', fontSize: 10, fill:0xFFFFFF});
 
         let waitBufferSectionGPU = new PIXI.Graphics();
         waitBufferSectionGPU.lineStyle(1);
-        waitBufferSectionGPU.beginFill(0xFF00FF);
+        waitBufferSectionGPU.beginFill(0xFF00FF, 0.5);
         waitBufferSectionGPU.drawRect(0, 0, waitForBufferDurationGPU * scale, 12);
         waitBufferSectionGPU.endFill();
         waitBufferSectionGPU.x = 0;
-        waitBufferSectionGPU.y = i*6;
 
 
         let workSectionGPU = new PIXI.Graphics();
@@ -81,21 +79,22 @@
         workSectionGPU.drawRect(0, 0, workDurationGPU * scale, 12);
         workSectionGPU.endFill();
         workSectionGPU.x = (workStartTimeGPU - submissionTimeGPU) * scale;
-/*
+
         let waitVsyncSectionGPU = new PIXI.Graphics();
         waitVsyncSectionGPU.beginFill(0xFFFF00);
         waitVsyncSectionGPU.drawRect(0, 0, waitVSyncGPU * scale, 12);
         waitVsyncSectionGPU.endFill();
-        waitVsyncSectionGPU.x = 0;*/
+        waitVsyncSectionGPU.x = (endWorkTimeGPU - submissionTimeGPU) * scale;
 
-        //containerGPU.addChild(waitVsyncSectionGPU);
+        containerGPU.addChild(waitVsyncSectionGPU);
         containerGPU.addChild(waitBufferSectionGPU);
         containerGPU.addChild(workSectionGPU);
         containerGPU.addChild(textGPU);
 
         
         containerGPU.x = submissionTimeGPU * scale;
-        containerGPU.y = 20;    
+        containerGPU.y = 20 + i * 20;    
+
         app.stage.addChild(containerGPU);    
         currentTimeGPU = endWorkTimeGPU;
         lastGPUFramePresentTime = nextVSyncTimeGPU; 
